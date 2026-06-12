@@ -46,6 +46,20 @@ def parse_args():
                    help="position sizing (default capweight = market-cap weighted)")
     p.add_argument("--cost-bps", type=float, default=5.0,
                    help="per-rebalance transaction cost in basis points of turnover (default 5)")
+    p.add_argument("--tax-long", type=float, default=0.0,
+                   help="long-term cap-gains rate on realized gains held >=1y (e.g. 0.20)")
+    p.add_argument("--tax-short", type=float, default=0.0,
+                   help="short-term cap-gains rate on gains held <1y (e.g. 0.37)")
+    p.add_argument("--mode", default="full", choices=["full", "drift_band", "no_sell"],
+                   help="rebalancing mode (default full)")
+    p.add_argument("--drift-band", type=float, default=0.05,
+                   help="for --mode drift_band: only trade when weight drifts > this (default 0.05)")
+    p.add_argument("--contribution", type=float, default=0.0,
+                   help="new cash added each quarter, in units where the start = 1.0")
+    p.add_argument("--report", default="basic", choices=["basic", "full"],
+                   help="'full' adds per-year + rolling + risk-relative analysis")
+    p.add_argument("--grid", action="store_true",
+                   help="run a robustness sweep (universes x weightings x {2006,2013}) and exit")
     p.add_argument("--universes", nargs="+", default=UNIVERSE_ORDER, choices=UNIVERSE_ORDER)
     p.add_argument("--no-cache", action="store_true", help="ignore the on-disk price cache")
     p.add_argument("--no-plot", action="store_true", help="skip PNG generation")
@@ -54,6 +68,14 @@ def parse_args():
 
 def fmt_pct(x: float) -> str:
     return f"{x * 100:,.1f}%"
+
+
+def df_md(df) -> str:
+    """DataFrame -> markdown, falling back to plain text if tabulate is absent."""
+    try:
+        return df.to_markdown()
+    except Exception:  # noqa: BLE001 - tabulate optional
+        return "```\n" + df.to_string() + "\n```"
 
 
 def build_table(rows: list) -> str:
@@ -84,12 +106,36 @@ def main():
     # 2) Benchmark: S&P 500 total return.
     sp = benchmark.load_sp500(args.start, args.end, use_cache=use_cache)
 
+    # 2b) Robustness sweep mode: parameter grid, then exit.
+    if args.grid:
+        from nasdaq_rebalancer import analysis
+        grid = analysis.robustness_grid(
+            panel, sp, args.universes,
+            ["capweight", "capweight_cap20", "equal"],
+            starts=["2006-01-01", "2013-01-01"], end=args.end, cost_bps=args.cost_bps)
+        print("\n=== Robustness grid (x vs S&P across parameter choices) ===\n")
+        try:
+            from tabulate import tabulate
+            print(tabulate(grid, headers="keys", tablefmt="github", showindex=False))
+        except Exception:  # noqa: BLE001
+            print(grid.to_string(index=False))
+        path = os.path.join(OUTPUT_DIR, "grid_results.md")
+        with open(path, "w") as f:
+            f.write("# Robustness grid\n\n")
+            f.write(df_md(grid.set_index("start")))
+        grid.to_csv(os.path.join(OUTPUT_DIR, "grid_results.csv"), index=False)
+        print(f"\nWrote {path}")
+        return 0
+
     # 3) Run each universe.
     curves = {}
     results = {}
     for u in args.universes:
-        res = backtest.run_backtest(u, panel, args.start, args.end,
-                                    weighting=args.weighting, cost_bps=args.cost_bps)
+        res = backtest.run_backtest(
+            u, panel, args.start, args.end,
+            weighting=args.weighting, cost_bps=args.cost_bps,
+            tax_long=args.tax_long, tax_short=args.tax_short,
+            mode=args.mode, drift_band=args.drift_band, contribution=args.contribution)
         results[u] = res
         curves[constituents.UNIVERSE_LABELS[u]] = res.equity
         if res.dropped:
@@ -123,8 +169,36 @@ def main():
     print(f"\n=== Results ({span}, ~{sp_stats.years:.1f}y, dividends reinvested) ===\n")
     print(table)
 
+    # 4b) Optional deep-dive analysis (per-year, rolling, benchmark-relative risk).
+    extra_md = ""
+    if args.report == "full":
+        from nasdaq_rebalancer import analysis
+        # Benchmark-relative risk per strategy.
+        rel_rows = []
+        for label in labels:
+            if label == sp_label:
+                continue
+            rel = analysis.benchmark_relative(aligned[label], aligned[sp_label])
+            rel_rows.append({"Strategy": label, "Beta": round(rel["beta"], 2),
+                             "Tracking err": fmt_pct(rel["tracking_error"]),
+                             "Info ratio": round(rel["information_ratio"], 2)})
+        # Per-calendar-year returns.
+        yt = analysis.year_table(aligned)
+        yt_pct = (yt * 100).round(1)
+        extra_md = "\n".join([
+            "", "## Benchmark-relative risk", "", build_table(rel_rows), "",
+            "## Per-calendar-year returns (%)", "",
+            df_md(yt_pct), "",
+            "_Reading: where the strategy beats/loses to the S&P year by year. "
+            "The edge clusters in the mega-cap-tech years, not evenly._", "",
+        ])
+        print("\n=== Per-calendar-year returns (%) ===\n")
+        print(yt_pct.to_string())
+        if not args.no_plot:
+            _plot_rolling({l: aligned[l] for l in labels}, args, span)
+
     # 5) Write summary markdown.
-    summary = _summary_markdown(args, span, sp_stats, table, results)
+    summary = _summary_markdown(args, span, sp_stats, table, results) + extra_md
     summary_path = os.path.join(OUTPUT_DIR, "results_summary.md")
     with open(summary_path, "w") as f:
         f.write(summary)
@@ -146,8 +220,11 @@ def _summary_markdown(args, span, sp_stats, table, results) -> str:
         "",
         f"- **Window:** {span} (~{sp_stats.years:.1f} years)",
         f"- **Weighting:** {args.weighting}",
-        f"- **Rebalance:** quarterly (first trading day of Jan/Apr/Jul/Oct)",
+        f"- **Rebalance:** quarterly, mode=`{args.mode}`"
+        + (f" (band {args.drift_band:.0%})" if args.mode == "drift_band" else ""),
         f"- **Transaction cost:** {args.cost_bps} bps of turnover per rebalance",
+        f"- **Tax:** long {args.tax_long:.0%} / short {args.tax_short:.0%} on realized gains",
+        f"- **Contribution:** {args.contribution} per quarter (start = 1.0)",
         f"- **Dividends:** reinvested (prices are split & dividend adjusted)",
         "",
         "## Headline comparison",
@@ -206,6 +283,35 @@ def _plot(aligned: dict, args, span):
     fig.tight_layout()
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     out = os.path.join(OUTPUT_DIR, "equity_curves.png")
+    fig.savefig(out, dpi=130)
+    print(f"Wrote {out}")
+
+
+def _plot_rolling(curves: dict, args, span, window_years: int = 3):
+    """Rolling N-year CAGR for each strategy vs the S&P -- shows regime dependence."""
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        from nasdaq_rebalancer import analysis
+    except Exception as exc:  # noqa: BLE001
+        print(f"(skipping rolling plot: {exc})")
+        return
+    fig, ax = plt.subplots(figsize=(12, 6))
+    for label, curve in curves.items():
+        rc = analysis.rolling_cagr(curve, window_years)
+        if rc.empty:
+            continue
+        style = dict(lw=2.5, color="black", ls="--") if label.startswith("S&P") else dict(lw=2)
+        ax.plot(rc.index, rc.values * 100, label=label, **style)
+    ax.axhline(0, color="grey", lw=0.8)
+    ax.set_title(f"Rolling {window_years}-year CAGR (%) -- {span}", fontsize=12)
+    ax.set_ylabel(f"Trailing {window_years}y CAGR (%)")
+    ax.legend(loc="upper left", fontsize=9)
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    out = os.path.join(OUTPUT_DIR, "rolling_cagr.png")
     fig.savefig(out, dpi=130)
     print(f"Wrote {out}")
 

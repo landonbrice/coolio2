@@ -104,6 +104,57 @@ def test_cost_reduces_return():
     print("  ok: transaction costs reduce ending value monotonically")
 
 
+def test_tax_reduces_return():
+    tickers = constituents.all_tickers("us10")
+    prices = synthetic_panel(tickers)
+    notax = backtest.run_backtest("us10", prices, "2006-01-01", "2025-12-31",
+                                  weighting="capweight")
+    taxed = backtest.run_backtest("us10", prices, "2006-01-01", "2025-12-31",
+                                  weighting="capweight", tax_long=0.20, tax_short=0.37)
+    assert taxed.equity.iloc[-1] < notax.equity.iloc[-1], "tax must lower ending value"
+    assert taxed.total_tax > 0, "some tax should be realized over 20y of rebalancing"
+    print(f"  ok: cap-gains tax reduces return (paid {taxed.total_tax:.2f} of base $1)")
+
+
+def test_drift_band_cuts_turnover():
+    tickers = constituents.all_tickers("us10")
+    prices = synthetic_panel(tickers)
+    full = backtest.run_backtest("us10", prices, "2006-01-01", "2025-12-31",
+                                 weighting="capweight", cost_bps=5)
+    band = backtest.run_backtest("us10", prices, "2006-01-01", "2025-12-31",
+                                 weighting="capweight", cost_bps=5,
+                                 mode="drift_band", drift_band=0.05)
+    assert sum(band.turnover) < sum(full.turnover), \
+        "a 5% drift band must reduce total turnover vs full rebalancing"
+    print(f"  ok: drift band cuts turnover ({sum(band.turnover):.1f} vs "
+          f"{sum(full.turnover):.1f} full)")
+
+
+def test_no_sell_runs_and_stays_positive():
+    tickers = constituents.all_tickers("us10")
+    prices = synthetic_panel(tickers)
+    res = backtest.run_backtest("us10", prices, "2006-01-01", "2025-12-31",
+                                weighting="capweight", mode="no_sell",
+                                tax_long=0.20, tax_short=0.37)
+    assert res.equity.notna().all() and (res.equity > 0).all(), "no_sell stays positive"
+    # no_sell still sells names that fall OUT of the top 10, so some tax can occur.
+    assert res.total_tax >= 0
+    print(f"  ok: no_sell mode runs ({res.equity.iloc[-1]:.2f}x, "
+          f"tax {res.total_tax:.2f})")
+
+
+def test_contributions_increase_value():
+    tickers = constituents.all_tickers("us10")
+    prices = synthetic_panel(tickers)
+    base = backtest.run_backtest("us10", prices, "2006-01-01", "2025-12-31")
+    with_c = backtest.run_backtest("us10", prices, "2006-01-01", "2025-12-31",
+                                   contribution=0.1)
+    assert with_c.total_contrib > 1.0, "contributions should accumulate"
+    assert with_c.equity.iloc[-1] > base.equity.iloc[-1], \
+        "adding cash each quarter must raise ending value"
+    print(f"  ok: contributions accumulate ({with_c.total_contrib:.1f} added)")
+
+
 def main():
     tests = [
         test_apply_cap,
@@ -111,6 +162,10 @@ def main():
         test_point_in_time_roster,
         test_full_run_sane,
         test_cost_reduces_return,
+        test_tax_reduces_return,
+        test_drift_band_cuts_turnover,
+        test_no_sell_runs_and_stays_positive,
+        test_contributions_increase_value,
     ]
     print("Running synthetic engine tests...")
     for t in tests:

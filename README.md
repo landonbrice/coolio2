@@ -59,7 +59,26 @@ python run_backtest.py --weighting capweight_cap20   # no name above 20%
 python run_backtest.py --weighting equal       # 10% each
 python run_backtest.py --cost-bps 10           # heavier trading costs
 python run_backtest.py --universes us10        # just one universe
+
+# Deeper analysis & honesty checks:
+python run_backtest.py --report full           # + per-year, rolling 3y CAGR, beta/tracking error
+python run_backtest.py --grid                  # robustness sweep: universes x weightings x {2006,2013}
+python run_backtest.py --tax-long 0.20 --tax-short 0.37   # model capital-gains tax drag
+python run_backtest.py --mode drift_band --drift-band 0.05  # only trade on >5% drift (less tax/turnover)
+python run_backtest.py --mode no_sell          # never trim winners; only sell names that drop out
+python run_backtest.py --contribution 0.05     # add 5% new cash each quarter
 ```
+
+### What the flags do
+
+| flag | effect |
+|------|--------|
+| `--report full` | adds per-calendar-year returns, rolling 3-yr CAGR (`rolling_cagr.png`), and beta / tracking error / information ratio vs the S&P |
+| `--grid` | runs every `universe × weighting × {2006, 2013-start}` combo into one table (`grid_results.md`) so the headline can't hide behind one lucky parameter set |
+| `--tax-long` / `--tax-short` | capital-gains tax on realized gains at each rebalance (long- vs short-term picked by holding period). The most honest adjustment for a taxable account |
+| `--mode drift_band` | only trades a name when its weight drifts past `--drift-band` — fewer taxable events |
+| `--mode no_sell` | never trims a winner; only sells names that fall out of the top 10, steering cash into underweights |
+| `--contribution` | periodic new cash (then the equity curve includes deposits) |
 
 ---
 
@@ -106,6 +125,14 @@ It ranks the current top 10 from **live** market caps, computes your target
 allocation, and prints exactly what to BUY/SELL to get there, flagging any name
 that **dropped out** (sell) or is a **new entrant** (buy).
 
+Useful flags for how *you* actually rebalance:
+
+```bash
+python rebalance_now.py --no-sell          # only sell drop-outs; never trim winners (tax-friendly)
+python rebalance_now.py --whole-shares     # trades in whole share counts, not dollars
+python rebalance_now.py --cash-buffer 0.02 # keep 2% in cash, allocate the rest
+```
+
 ### Scheduling the quarterly nag
 
 **macOS / Linux (cron)** — run on the 1st of Jan/Apr/Jul/Oct at 9am:
@@ -134,9 +161,10 @@ The backtest engine is validated with **synthetic prices** (no network needed):
 python -m tests.test_engine_synthetic
 ```
 
-These check weight normalization, the 20%-cap logic, point-in-time roster
-selection (no look-ahead), full-run sanity (≈80 rebalances over 20y), and that
-transaction costs reduce returns.
+These check weight normalization, the 20%-cap logic (incl. infeasible caps),
+point-in-time roster selection (no look-ahead), full-run sanity (≈80 rebalances
+over 20y), and that transaction costs and capital-gains tax reduce returns, that
+the drift band cuts turnover, and that no-sell / contributions behave.
 
 ## Layout
 
@@ -144,8 +172,9 @@ transaction costs reduce returns.
 nasdaq_rebalancer/
   constituents.py   # curated point-in-time top-10 tables (the anti-bias core)
   prices.py         # yfinance download, USD/FX conversion, caching, graceful drops
-  backtest.py       # quarterly cap-weighted rebalancing engine
+  backtest.py       # quarterly rebalancing engine (cost, tax, drift-band, no-sell, contributions)
   metrics.py        # CAGR, vol, Sharpe, max drawdown, multiple-vs-benchmark
+  analysis.py       # per-year + rolling CAGR, beta/tracking error, robustness grid
   benchmark.py      # S&P 500 total return (+ QQQ)
 run_backtest.py     # CLI: backtest all three universes vs S&P 500
 rebalance_now.py    # CLI: live top-10 + buy/sell plan + desktop notification

@@ -292,6 +292,19 @@ UNIVERSE_LABELS = {
     "global10": "Top 10 global companies",
 }
 
+# Confidence in the curated membership, by era. We deliberately keep ANNUAL
+# (year-end) snapshots rather than fabricating quarterly precision we don't have:
+# the top-10 turns over slowly, and inventing 240 quarterly rows would add false
+# precision, not accuracy. Cap-weighting is dominated by the top 3-4 names, whose
+# identity/rank is high-confidence throughout.
+CONFIDENCE = {
+    "2005-2012": "medium  (membership solid; #8-#10 ordering & caps approximate; "
+                 "some early NASDAQ names -- DELL/EBAY/ORCL -- have messy Yahoo history)",
+    "2013-2025": "high    (well-documented mega-cap era; US/NASDAQ names all live & USD)",
+    "global10":  "low pre-2015 (PetroChina/China Mobile/Gazprom ADRs delisted -> "
+                 "dropped & renormalized at runtime); medium-high 2015+",
+}
+
 
 def _parse(d: str) -> datetime:
     return datetime.strptime(d, "%Y-%m-%d")

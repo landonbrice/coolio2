@@ -47,6 +47,13 @@ def parse_args():
     p.add_argument("--notify", action="store_true", help="fire a desktop notification")
     p.add_argument("--min-trade", type=float, default=50.0,
                    help="ignore buy/sell actions smaller than this $ amount")
+    p.add_argument("--no-sell", action="store_true",
+                   help="don't recommend trimming winners; only sell names that fell "
+                        "OUT of the top 10, and steer cash into the underweights")
+    p.add_argument("--whole-shares", action="store_true",
+                   help="express trades in whole share counts (no fractional shares)")
+    p.add_argument("--cash-buffer", type=float, default=0.0,
+                   help="fraction of the portfolio to keep in cash, e.g. 0.02 = 2%%")
     return p.parse_args()
 
 
@@ -146,14 +153,22 @@ def main():
             except Exception:  # noqa: BLE001
                 pass
     total = holdings["cash"] + pos_value
+    investable = total * (1.0 - max(0.0, args.cash_buffer))  # dollars we'll allocate
 
     print(f"=== Current top 10 ({args.universe}, {args.weighting}) ===")
     for i, (t, w) in enumerate(sorted(weights.items(), key=lambda kv: kv[1], reverse=True), 1):
         print(f"  {i:>2}. {t:<7} {constituents.name_of(t):<28} target {w*100:5.1f}%  "
-              f"(${total * w:,.0f})")
+              f"(${investable * w:,.0f})")
 
     print(f"\nPortfolio value: ${total:,.2f}  (cash ${holdings['cash']:,.2f} + "
           f"positions ${pos_value:,.2f})")
+    if args.cash_buffer > 0:
+        print(f"Holding {args.cash_buffer:.0%} (${total - investable:,.0f}) as a cash "
+              f"buffer; allocating ${investable:,.0f}.")
+    flags = [m for m, on in (("no-sell", args.no_sell),
+                             ("whole-shares", args.whole_shares)) if on]
+    if flags:
+        print(f"Mode: {', '.join(flags)}")
 
     # Build the action plan.
     print("\n=== Rebalance plan ===")
@@ -162,18 +177,36 @@ def main():
     target_names = set(weights)
 
     for t in sorted(target_names | held):
-        cur_val = pos.get(t, 0) * px.get(t, 0.0)
-        tgt_val = total * weights.get(t, 0.0)
+        price_t = px.get(t, 0.0)
+        cur_val = pos.get(t, 0) * price_t
+        tgt_val = investable * weights.get(t, 0.0)
         delta = tgt_val - cur_val
+
+        dropped_out = t not in target_names and t in held
+        new_entrant = t in target_names and t not in held
+
+        # --no-sell: never trim a name that's still in the top 10; only fully
+        # sell names that dropped OUT. (Buys still happen, funded by cash + the
+        # proceeds of those forced exits.)
+        if args.no_sell and delta < 0 and not dropped_out:
+            continue
+        if dropped_out:
+            delta = -cur_val  # sell the whole position
+
         if abs(delta) < args.min_trade:
             continue
-        tag = ""
-        if t in target_names and t not in held:
-            tag = "  <-- NEW entrant"
-        if t not in target_names and t in held:
-            tag = "  <-- DROPPED out of top 10, sell fully"
+
         verb = "BUY " if delta > 0 else "SELL"
-        actions.append(f"  {verb} ${abs(delta):,.0f} {t} ({constituents.name_of(t)}){tag}")
+        if args.whole_shares and price_t > 0:
+            shares = int(abs(delta) // price_t) if delta > 0 else round(abs(delta) / price_t)
+            if shares <= 0:
+                continue
+            qty = f"{shares} sh (~${shares * price_t:,.0f})"
+        else:
+            qty = f"${abs(delta):,.0f}"
+        tag = "  <-- NEW entrant" if new_entrant else \
+              ("  <-- DROPPED out of top 10, sell fully" if dropped_out else "")
+        actions.append(f"  {verb} {qty} {t} ({constituents.name_of(t)}){tag}")
 
     if actions:
         print("\n".join(actions))
