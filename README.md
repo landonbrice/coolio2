@@ -38,6 +38,11 @@ Results land in `./output/` (a console table, `results_summary.md`,
 `equity_curves.png`, and raw equity CSVs). Price data is cached in `./data_cache/`
 so re-runs are instant.
 
+> 📊 **Already ran it?** A live run + honest interpretation + forward-strategy
+> notes live in [`docs/RESULTS.md`](docs/RESULTS.md). Short version: the NASDAQ
+> top-10 returned **3.2x** the S&P over ~20 years, but the edge is concentrated
+> mega-cap-tech beta, not a free lunch — read the caveats there before trusting it.
+
 ---
 
 ## The three universes

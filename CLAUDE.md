@@ -28,8 +28,14 @@ all output and docs.
   root commit (the repo started empty), so all real work lives on the branch.
 - Open draft PR: **#1** (`landonbrice/coolio2`).
 - The engine is fully built and **validated offline with synthetic-price tests**.
-  As of this handoff it had **not yet been run against live Yahoo data** — that
-  is the immediate next step (see below).
+- **Run live against Yahoo data on 2026-06-13.** Results + honest interpretation
+  + forward-strategy notes are in **`docs/RESULTS.md`**. Headline: NASDAQ top-10
+  = **3.20x** the S&P over ~20y (17.7% vs 11.1% CAGR), edge concentrated in
+  mega-cap tech post-2013; us10/global10 only ~1.1–1.3x. Tax drag is mild
+  (~0.6%/yr). Re-run before quoting — numbers drift as the window extends.
+- **Gotcha fixed:** `pyarrow` is required for the parquet price cache but was
+  missing from `requirements.txt`; now added. Without it `run_backtest.py` crashes
+  on cache read.
 
 ## Local workflow (this is now a local project)
 
@@ -107,11 +113,15 @@ docs/VISION.md     # rationale & roadmap
 - Commit messages: clear and descriptive. Keep the "not financial advice" framing.
 
 ## Immediate next steps (handoff TODO)
-1. **Run live** (`python run_backtest.py --report full` and `--grid`) and capture
-   real numbers into `docs/VISION.md` or a results note. Confirm the edge after
-   tax and across the robustness grid.
-2. Optional: add a GitHub Actions workflow running the synthetic tests (gives the
-   PR real checks); add an equal- vs cap-weight chart and a "buy-2010-top-10-and-
-   never-rebalance" baseline to isolate what rebalancing itself contributes.
-3. Optional: wire in a point-in-time constituents data source for true quarterly
-   accuracy (would replace the curated annual snapshots in `constituents.py`).
+1. ✅ **Done — run live & captured.** See `docs/RESULTS.md`. Edge confirmed for
+   nasdaq10, survives tax and the grid; us10/global10 barely beat the index.
+2. **Highest-value next experiments** (justify the strategy going forward — see
+   `docs/RESULTS.md` §7):
+   - A **"buy 2013 top-10 and never rebalance"** baseline to isolate how much the
+     *rebalancing rule itself* adds vs just owning big-caps (§4 hints it helps).
+   - A **trend filter** (hold top-10 only while above 200-DMA, else cash) to tame
+     the 2x-market drawdowns — the strategy's main weakness.
+   - A blended **70% SPY / 30% nasdaq10** "satellite" line.
+3. Optional: GitHub Actions running the synthetic tests; point-in-time
+   constituents data source for true quarterly accuracy (replaces curated annual
+   snapshots in `constituents.py`).

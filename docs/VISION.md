@@ -102,8 +102,9 @@ Surfaced directly in the tool output and README:
 
 ## 7. Roadmap
 
-- **Run live & record results** (the immediate gap): confirm the edge survives
-  tax and shows up across the robustness grid; capture numbers here.
+- ✅ **Run live & record results** (was the immediate gap): done 2026-06-13 — see
+  `docs/RESULTS.md`. Edge confirmed for nasdaq10 (3.2x), survives tax (~0.6%/yr
+  drag) and the grid; us10/global10 only ~1.1–1.3x. Next: the baselines below.
 - **Baselines that isolate the source of return:** equal- vs cap-weight; and a
   "buy the 2010 top 10 and never rebalance" line to quantify what the
   *rebalancing* itself adds vs just owning big-caps.
