@@ -12,3 +12,6 @@ data_cache/
 
 # Local config
 holdings.json
+
+# Run logs
+*.log
