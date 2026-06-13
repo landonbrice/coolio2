@@ -44,6 +44,8 @@ class Params:
     mode: str = "full"             # full | drift_band | no_sell
     drift_band: float = 0.0        # e.g. 0.05 = 5 percentage points
     contribution: float = 0.0      # new cash added at each rebalance
+    top_n: Optional[int] = None    # hold only the top N names (None = whole roster, i.e. 10)
+    interval: str = "Q"            # rebalance cadence: M | Q | SA | A
 
 
 @dataclass
@@ -62,6 +64,19 @@ class BacktestResult:
 
 def quarter_starts(start: str, end: str) -> List[pd.Timestamp]:
     return list(pd.date_range(start=start, end=end, freq="QS"))
+
+
+# Rebalance cadence -> pandas period-start frequency.
+#   M  = monthly, Q = quarterly, SA = semiannual (every 2 quarters), A = annual.
+_INTERVAL_FREQ = {"M": "MS", "Q": "QS", "SA": "2QS", "A": "YS"}
+
+
+def period_starts(start: str, end: str, interval: str = "Q") -> List[pd.Timestamp]:
+    """Rebalance dates for a given cadence (first calendar day of each period)."""
+    freq = _INTERVAL_FREQ.get(interval)
+    if freq is None:
+        raise ValueError(f"unknown interval {interval!r}; use one of {list(_INTERVAL_FREQ)}")
+    return list(pd.date_range(start=start, end=end, freq=freq))
 
 
 def _snapshot_date_for(universe: str, as_of: datetime) -> pd.Timestamp:
@@ -114,9 +129,16 @@ def _target_weights(
     prices: pd.DataFrame,
     weighting: str,
     dropped: Dict[str, int],
+    top_n: Optional[int] = None,
 ) -> Dict[str, float]:
-    """Target weights for the names we can actually price on the rebalance date."""
+    """Target weights for the names we can actually price on the rebalance date.
+
+    `top_n` slices the (cap-ranked) roster to the largest N names before pricing,
+    so top_n=1/3/5 hold only the biggest 1/3/5 companies. None = whole roster.
+    """
     roster = constituents.members_asof(universe, rebal_date.to_pydatetime())
+    if top_n is not None:
+        roster = roster[:top_n]
     snap_date = _snapshot_date_for(universe, rebal_date.to_pydatetime())
 
     priceable = {}
@@ -244,16 +266,18 @@ def run_backtest(
     mode: str = "full",
     drift_band: float = 0.0,
     contribution: float = 0.0,
+    top_n: Optional[int] = None,
+    interval: str = "Q",
 ) -> BacktestResult:
     p = Params(weighting=weighting, cost_bps=cost_bps, tax_long=tax_long,
                tax_short=tax_short, mode=mode, drift_band=drift_band,
-               contribution=contribution)
+               contribution=contribution, top_n=top_n, interval=interval)
 
     cal = prices.loc[start:end].index
     if len(cal) == 0:
         raise ValueError("No price data in the requested window.")
 
-    qs = quarter_starts(start, end)
+    qs = period_starts(start, end, interval)
     trade_dates = []
     for qd in qs:
         nxt = cal[cal >= qd]
@@ -277,7 +301,7 @@ def run_backtest(
             if reb_idx > 0 and p.contribution > 0:   # no contribution at inception
                 cash += p.contribution
                 total_contrib += p.contribution
-            target = _target_weights(universe, day, prices, weighting, dropped)
+            target = _target_weights(universe, day, prices, weighting, dropped, p.top_n)
             if target:
                 cash, turn, tax, cost = _rebalance(ledger, cash, day, target, prices, p)
                 turnovers.append(turn)

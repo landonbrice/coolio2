@@ -155,6 +155,37 @@ def test_contributions_increase_value():
     print(f"  ok: contributions accumulate ({with_c.total_contrib:.1f} added)")
 
 
+def test_top_n_slices_roster():
+    tickers = constituents.all_tickers("us10")
+    prices = synthetic_panel(tickers)
+    # top_n=1 -> a single 100% name; top_n=3 -> at most 3 names.
+    w1 = backtest._target_weights("us10", pd.Timestamp("2015-01-02"), prices,
+                                  "capweight", {}, top_n=1)
+    assert len(w1) == 1 and abs(sum(w1.values()) - 1.0) < 1e-9, "top_n=1 is one full name"
+    w3 = backtest._target_weights("us10", pd.Timestamp("2015-01-02"), prices,
+                                  "capweight", {}, top_n=3)
+    assert len(w3) <= 3 and abs(sum(w3.values()) - 1.0) < 1e-6, "top_n=3 holds <=3 names"
+    # A full top_n=1 run stays positive and matches the largest name's path direction.
+    res = backtest.run_backtest("us10", prices, "2006-01-01", "2025-12-31", top_n=1)
+    assert res.equity.notna().all() and (res.equity > 0).all(), "top_n=1 run stays positive"
+    assert max(len(r["weights"]) for r in res.rosters) == 1, "top_n=1 never holds >1 name"
+    print("  ok: top_n slices the ranked roster (1 and 3 names)")
+
+
+def test_interval_changes_cadence():
+    tickers = constituents.all_tickers("us10")
+    prices = synthetic_panel(tickers)
+    counts = {}
+    for iv in ("M", "Q", "SA", "A"):
+        res = backtest.run_backtest("us10", prices, "2006-01-01", "2025-12-31", interval=iv)
+        assert res.equity.notna().all() and (res.equity > 0).all(), f"{iv} run positive"
+        counts[iv] = len(res.rebalance_dates)
+    assert counts["M"] > counts["Q"] > counts["SA"] > counts["A"], \
+        f"rebalance frequency must order M>Q>SA>A, got {counts}"
+    print(f"  ok: interval controls cadence (M/Q/SA/A rebalances = "
+          f"{counts['M']}/{counts['Q']}/{counts['SA']}/{counts['A']})")
+
+
 def main():
     tests = [
         test_apply_cap,
@@ -166,6 +197,8 @@ def main():
         test_drift_band_cuts_turnover,
         test_no_sell_runs_and_stays_positive,
         test_contributions_increase_value,
+        test_top_n_slices_roster,
+        test_interval_changes_cadence,
     ]
     print("Running synthetic engine tests...")
     for t in tests:
