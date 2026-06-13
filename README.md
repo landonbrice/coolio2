@@ -179,4 +179,6 @@ nasdaq_rebalancer/
 run_backtest.py     # CLI: backtest all three universes vs S&P 500
 rebalance_now.py    # CLI: live top-10 + buy/sell plan + desktop notification
 tests/              # synthetic-price engine tests (offline)
+CLAUDE.md           # working guide for local Claude Code sessions
+docs/VISION.md      # rationale behind every major build decision + roadmap
 ```
