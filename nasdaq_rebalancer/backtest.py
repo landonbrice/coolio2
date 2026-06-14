@@ -220,13 +220,12 @@ def _rebalance(ledger, cash, day, weights, prices, p: Params):
         gain = sh * (px - lot["basis"])
         rate = p.tax_long if (day - lot["acquired"]).days >= 365 else p.tax_short
         tax += max(0.0, gain) * rate
-        cost += proceeds * cost_rate
         turnover += proceeds
         lot["shares"] -= sh
         if lot["shares"] <= 1e-9:
             del ledger[t]
         sell_cost = proceeds * cost_rate
-        cost += sell_cost
+        cost += sell_cost                      # count sell-side cost ONCE
         cash += proceeds - sell_cost          # net sell-side cost out immediately
     cash -= tax
 
