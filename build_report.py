@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import base64
 import json
+import math
 import os
 
 OUT = os.environ.get("REBAL_OUTPUT_DIR", "output")
@@ -37,6 +38,10 @@ def xx(x):
     return f"{x:.2f}×"
 
 
+def dollars(v):
+    return f"${v:,.0f}"
+
+
 def bar(frac, color, w=100):
     frac = max(0.0, min(1.0, frac))
     return (f'<span class="barwrap"><span class="bar" style="width:{frac*w:.0f}%;'
@@ -51,6 +56,7 @@ def build(d):
     uni = d["universe"]
     tax = d["tax"]
     of = d["overfit"]
+    years = math.log(bench["multiple"]) / math.log(1 + bench["cagr"])
 
     # ---------- universe rows ----------
     uni_order = ["nasdaq10", "us10", "global10"]
@@ -102,6 +108,20 @@ def build(d):
           <td class="num">{xx(r['xsp_tax'])}</td>
         </tr>"""
 
+    # ---------- $5,000 dollar tie-out (3 archetypes) ----------
+    taxmap = {r["config"]: r for r in tax}
+    dollar_rows = ""
+    for name in ["cap-weight top10 (baseline)", "equal full (pre-tax winner)",
+                 "top5 equal full (max CAGR)"]:
+        r = taxmap[name]
+        e0 = 5000 * (1 + r["cagr_notax"]) ** years
+        e1 = 5000 * (1 + r["cagr_tax"]) ** years
+        hot = " class='hot'" if "cap-weight" in name else ""
+        dollar_rows += (f"<tr{hot}><td class='lbl'>{name}</td>"
+                        f"<td class='num'>{dollars(e0)}</td>"
+                        f"<td class='num bold'>{dollars(e1)}</td>"
+                        f"<td class='num neg'>{dollars(e0 - e1)}</td></tr>")
+
     # ---------- cadence / mode matrix ----------
     ce = d["cadence_effect"]
     modes = ["full", "drift_band", "no_sell"]
@@ -118,7 +138,6 @@ def build(d):
                 tds += "<td>—</td>"
                 continue
             f = (c["cagr"] - lo) / (hi - lo) if hi > lo else 0.5
-            g = int(40 + f * 120)  # green intensity
             tds += (f'<td class="heat" style="background:rgba(46,125,87,{0.12+f*0.55:.2f})">'
                     f'{pct(c["cagr"])}<br><span class="sub">Sh {c["sharpe"]:.2f}</span></td>')
         cad_rows += f"<tr><td class='lbl'>{mode}</td>{tds}</tr>"
@@ -148,19 +167,19 @@ def build(d):
                    card("Buy 2013 top-10, never touch", bh, "#b07d2b"))
 
     return TEMPLATE.format(
-        start=m["start"], end=m["end"], cost=m["cost_bps"],
+        start=m["start"], end=m["end"], cost=m["cost_bps"], yrs=f"{years:.1f}",
         taxl=int(m["tax_long"]*100), taxs=int(m["tax_short"]*100),
         b_cagr=pct(bench["cagr"]), b_vol=pct(bench["vol"]),
         b_sharpe=f"{bench['sharpe']:.2f}", b_dd=pct(bench["maxdd"]),
-        uni_rows=uni_rows, lb_rows=lb_rows, tax_rows=tax_rows, cad_rows=cad_rows,
-        sat_cards=sat_cards, rebal_cards=rebal_cards,
+        uni_rows=uni_rows, lb_rows=lb_rows, tax_rows=tax_rows, dollar_rows=dollar_rows,
+        cad_rows=cad_rows, sat_cards=sat_cards, rebal_cards=rebal_cards,
         sat_img=img("satellite_curve.png"), pareto_img=img("sweep_pareto.png"),
         tt_img=img("sweep_train_test.png"),
         rebal_alpha=f"{rv['rebalancing_alpha_pts']:.1f}",
         bh_cagr=pct(bh["cagr"]), rb_cagr=pct(rb["cagr"]),
         bh_sharpe=f"{bh['sharpe']:.2f}", rb_sharpe=f"{rb['sharpe']:.2f}",
         bh_dd=pct(bh["maxdd"]), rb_dd=pct(rb["maxdd"]),
-        roster=roster,
+        roster=roster, strat_cagr=pct(sat["strat"]["cagr"]),
         edge_cap=pct(sat["edge_capture"], 0), blend_cagr=pct(sat["blend"]["cagr"]),
         blend_vol=pct(sat["blend"]["vol"]), strat_vol=pct(sat["strat"]["vol"]),
         strat_dd=pct(sat["strat"]["maxdd"]),
@@ -180,10 +199,11 @@ TEMPLATE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
   --green:#2e7d57; --blue:#1f77b4; --red:#c0392b; --gold:#b07d2b; --accent:#2e7d57;
 }}
 *{{box-sizing:border-box}}
+html{{scroll-behavior:smooth}}
 body{{margin:0;background:var(--bg);color:var(--ink);
   font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}}
 .wrap{{max-width:980px;margin:0 auto;padding:0 28px 80px}}
-header{{padding:54px 0 30px;border-bottom:1px solid var(--line);margin-bottom:8px}}
+header{{padding:54px 0 26px;border-bottom:1px solid var(--line);margin-bottom:8px}}
 .kicker{{letter-spacing:.16em;text-transform:uppercase;font-size:11.5px;color:var(--accent);font-weight:700}}
 h1{{font-size:32px;line-height:1.18;margin:10px 0 6px;letter-spacing:-.01em}}
 .sub{{color:var(--muted)}}
@@ -191,7 +211,11 @@ h1{{font-size:32px;line-height:1.18;margin:10px 0 6px;letter-spacing:-.01em}}
 .meta b{{color:var(--ink)}}
 .badge{{display:inline-block;background:#fff4f4;color:var(--red);border:1px solid #f3d3d3;
   border-radius:5px;padding:2px 9px;font-size:11px;font-weight:700;letter-spacing:.03em}}
-section{{margin:46px 0 0}}
+.nav{{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 0}}
+.nav a{{font-size:11.5px;color:var(--muted);text-decoration:none;border:1px solid var(--line);
+  border-radius:999px;padding:4px 11px;white-space:nowrap;transition:.15s}}
+.nav a:hover{{color:#fff;background:var(--accent);border-color:var(--accent)}}
+section{{margin:46px 0 0;scroll-margin-top:18px}}
 .snum{{color:var(--accent);font-weight:800;font-size:13px;letter-spacing:.05em}}
 h2{{font-size:22px;margin:6px 0 4px;letter-spacing:-.01em}}
 .lede{{color:var(--muted);margin:0 0 18px;max-width:74ch}}
@@ -228,6 +252,11 @@ tr.hot td.lbl,tr.hot td:first-child{{box-shadow:inset 3px 0 0 var(--green)}}
 .stat .sc{{font-size:11.5px;color:var(--muted);margin-top:3px}}
 .fig{{margin:14px 0 4px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}}
 .fig img{{width:100%;display:block}}
+.eq{{background:#11261c;color:#cdeedd;border-radius:8px;padding:11px 15px;margin:14px 0 2px;
+  font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}}
+.eq b{{color:#fff}}
+.mini{{font-size:12px;color:var(--muted);margin:10px 0 2px;line-height:1.55}}
+.mini b{{color:var(--ink)}}
 .why{{background:#f4f7fb;border-left:3px solid var(--accent);border-radius:0 8px 8px 0;
   padding:13px 16px;margin:14px 0 2px;font-size:13.5px}}
 .why b{{color:var(--ink)}} .why .h{{font-weight:800;color:var(--accent);font-size:11.5px;
@@ -237,8 +266,6 @@ tr.hot td.lbl,tr.hot td:first-child{{box-shadow:inset 3px 0 0 var(--green)}}
 .tl p{{margin:8px 0 0;font-size:15px;line-height:1.62}}
 .tl b{{color:#fff}}
 .foot{{margin-top:54px;padding-top:20px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted)}}
-.grid2{{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}}
-@media(max-width:720px){{.grid2{{grid-template-columns:1fr}}}}
 </style></head><body><div class="wrap">
 
 <header>
@@ -248,12 +275,18 @@ tr.hot td.lbl,tr.hot td:first-child{{box-shadow:inset 3px 0 0 var(--green)}}
   "own the biggest companies, rebalance into the new leaders" thesis — read across
   every structural lens, with and without tax.</div>
   <div class="meta">
-    <span><b>Window</b> {start} → {end}</span>
+    <span><b>Updated</b> {end}</span>
+    <span><b>Window</b> {start} → {end} (~{yrs}y)</span>
     <span><b>Cost</b> {cost} bps/turn</span>
     <span><b>Tax case</b> {taxl}% long / {taxs}% short</span>
-    <span><b>Benchmark</b> S&amp;P 500 TR: {b_cagr} CAGR · {b_vol} vol · Sharpe {b_sharpe} · {b_dd} DD</span>
+    <span><b>Benchmark</b> S&amp;P 500 TR: {b_cagr} CAGR · {b_vol} vol · {b_dd} DD</span>
   </div>
   <div style="margin-top:14px"><span class="badge">RESEARCH / CURIOSITY TOOL — NOT FINANCIAL ADVICE</span></div>
+  <nav class="nav">
+    <a href="#u">01 Universe</a><a href="#ret">02 Return</a><a href="#risk">03 Risk</a>
+    <a href="#tax">04 Tax</a><a href="#reb">05 Rebalancing</a><a href="#hold">06 Buy &amp; hold</a>
+    <a href="#sat">07 Satellite</a><a href="#meta">08 Overfit</a><a href="#fwd">09 Forward</a><a href="#next">10 What's next</a>
+  </nav>
 </header>
 
 <div class="tl">
@@ -268,7 +301,7 @@ tr.hot td.lbl,tr.hot td:first-child{{box-shadow:inset 3px 0 0 var(--green)}}
   third of the edge at near-index volatility.</p>
 </div>
 
-<section>
+<section id="u">
   <div class="snum">01 · BY UNIVERSE</div>
   <h2>Where does the edge actually live?</h2>
   <p class="lede">The strategy was run across three readings of "the top 10." They are not
@@ -287,7 +320,7 @@ tr.hot td.lbl,tr.hot td:first-child{{box-shadow:inset 3px 0 0 var(--green)}}
   "biggest" resolves to NASDAQ tech.</div>
 </section>
 
-<section>
+<section id="ret">
   <div class="snum">02 · BY RETURN</div>
   <h2>The raw-return leaderboard (pre-tax, in-sample)</h2>
   <p class="lede">Sorted by CAGR over the full window. Note what wins — and the warning
@@ -306,7 +339,7 @@ tr.hot td.lbl,tr.hot td:first-child{{box-shadow:inset 3px 0 0 var(--green)}}
   of CAGR means buying a much deeper hole.</div>
 </section>
 
-<section>
+<section id="risk">
   <div class="snum">03 · BY RISK</div>
   <h2>This is not a safer way to own stocks</h2>
   <p class="lede">It is a higher-octane one. Volatility runs 22–24% (vs the index's 19%), and
@@ -330,7 +363,7 @@ tr.hot td.lbl,tr.hot td:first-child{{box-shadow:inset 3px 0 0 var(--green)}}
   Position-size to that number first, optimize second.</div>
 </section>
 
-<section>
+<section id="tax">
   <div class="snum">04 · BY TAX</div>
   <h2>Tax quietly inverts the ranking</h2>
   <p class="lede">The sweep is deliberately pre-tax to isolate structure. Layer in a {taxl}%/{taxs}%
@@ -341,15 +374,24 @@ tr.hot td.lbl,tr.hot td:first-child{{box-shadow:inset 3px 0 0 var(--green)}}
         <th>Tax drag</th><th class="num">Turnover/yr</th><th class="num">Max DD</th><th class="num">× S&amp;P taxed</th></tr>
     {tax_rows}
   </table>
+  <div class="eq">annual tax drag &nbsp;≈&nbsp; <b>turnover × avg embedded gain × tax rate</b> &nbsp;&nbsp;(empirically ≈ 0.07 pt of CAGR per 1% of annual turnover)</div>
+  <p class="mini" style="font-size:13px;color:var(--ink);font-weight:700;margin-top:16px">What $5,000 becomes over ~{yrs} years, in a taxable account</p>
+  <table>
+    <tr><th>Config (nasdaq10)</th><th class="num">Pre-tax ending</th><th class="num">After-tax ending</th><th class="num">Handed to the IRS</th></tr>
+    {dollar_rows}
+  </table>
+  <div class="mini"><b>Not modeled — so read the number correctly:</b> step-up in basis at death (wipes the gain entirely — favors low turnover); tax-loss harvesting (reduces drag); state tax + the 3.8% NIIT (this is <i>federal only</i>, so a high earner's real drag is <i>worse</i>); and tax-advantaged accounts (IRA/401k/HSA), where the drag is <b>zero</b> and the higher-pre-tax config wins again.</div>
   <div class="why"><span class="h">Why it changes</span>
   Equal-weight <b>full</b> trims every winner back to target each period — 27%/yr turnover, and a
   <b>2.0 pt/yr</b> tax bleed that drops it <i>below</i> the plain cap-weight baseline it beat pre-tax.
   Cap-weight is naturally low-turnover (8%/yr): winners are <i>supposed</i> to grow their weight, so it
-  barely trades and keeps almost all its return (0.6 pt drag). <b>Account location is a real decision:</b>
-  cap-weight in a taxable account; reserve equal-weight / concentration for tax-advantaged.</div>
+  barely trades and keeps almost all its return (0.6 pt drag). Annual rebalancing also helps — it
+  realizes less often <i>and</i> pushes more sales past the 1-year line into the lower long-term rate.
+  <b>Account location is a real decision:</b> cap-weight in a taxable account; reserve equal-weight /
+  concentration for tax-advantaged.</div>
 </section>
 
-<section>
+<section id="reb">
   <div class="snum">05 · BY REBALANCING</div>
   <h2>Cadence barely matters; the <i>rule</i> matters</h2>
   <p class="lede">Holding nasdaq10 / equal / top-10 fixed and varying only how you rebalance.
@@ -367,7 +409,7 @@ tr.hot td.lbl,tr.hot td:first-child{{box-shadow:inset 3px 0 0 var(--green)}}
   letting old winners ride. The catch — full mode's turnover is exactly what tax (Section 04) punishes.</div>
 </section>
 
-<section>
+<section id="hold">
   <div class="snum">06 · BY <i>NOT</i> REBALANCING</div>
   <h2>How much of the edge is the rule vs. the starting roster?</h2>
   <p class="lede">The cleanest honesty test: buy the 2013 top-10 and <b>never touch it</b>, vs.
@@ -382,7 +424,7 @@ tr.hot td.lbl,tr.hot td:first-child{{box-shadow:inset 3px 0 0 var(--green)}}
   but modest return premium by rotating into new leaders (Nvidia, Meta); it is not, by itself, the alpha.</div>
 </section>
 
-<section>
+<section id="sat">
   <div class="snum">07 · THE SATELLITE</div>
   <h2>The honest way to actually hold this</h2>
   <p class="lede">Most of the single-factor risk comes from going 100% in. A 70% index / 30%
@@ -398,7 +440,7 @@ tr.hot td.lbl,tr.hot td:first-child{{box-shadow:inset 3px 0 0 var(--green)}}
   hold and one that gets liquidated at the bottom.</div>
 </section>
 
-<section>
+<section id="meta">
   <div class="snum">08 · THE META-CHECK</div>
   <h2>Does the "winner" survive out-of-sample?</h2>
   <p class="lede">Every config was scored on train (2006–17) and held-out test (2018–26). If the
@@ -412,6 +454,46 @@ tr.hot td.lbl,tr.hot td:first-child{{box-shadow:inset 3px 0 0 var(--green)}}
   "optimal" cell does not. <b>Trade the structure, never the backtest's #1 row.</b></div>
 </section>
 
+<section id="fwd">
+  <div class="snum">09 · WHAT TO EXPECT GOING FORWARD</div>
+  <h2>The 3.2× is the rear-view mirror</h2>
+  <p class="lede">A backtest tells you what <i>happened</i>, not what's <i>coming</i>. The honest
+  forward number is much lower than the historical {strat_cagr} — and that's a property of size,
+  not a flaw in the strategy.</p>
+  <div class="why"><span class="h">Why forward return compresses with size</span>
+  A company's return ≈ <b>economy growth + market-share gain + margin expansion + multiple change</b>.
+  At $1–4T, the share-gain runway shrinks (you already dominate your markets), margins sit near their
+  ceiling, and the multiple can mostly only fall from a high base — so growth converges toward
+  <i>economy-like + a thinning premium</i>. Nvidia adding 30% at ~$3T means creating ~$900B of value in
+  a single year — capturing nearly an entire new trillion-dollar market annually. Doable in an
+  AI-capex boom for a year or two; not for a decade. <b>Nominal milestones (a $10T company) stay
+  reachable</b> as the whole pie inflates and grows — but the <i>excess</i> return, the only thing you
+  are actually paid for, fades as size rises.</div>
+  <div class="why" style="border-left-color:var(--gold);background:#fbf6ee">
+  <span class="h" style="color:var(--gold)">The honest forward expectation</span>
+  Not {strat_cagr}. Plan for <b>index return + a modest quality / durability premium − crowding −
+  valuation drag</b>. You own these names for what they <i>are</i> now — durable, capital-light,
+  high-ROIC compounders — sized as a risk-budgeted satellite, <b>not</b> as a bet that the last
+  decade repeats.</div>
+</section>
+
+<section id="next">
+  <div class="snum">10 · THE NEXT FRONTIER</div>
+  <h2>From "own the summit" to "catch the ascent"</h2>
+  <p class="lede">This backtest only ever <i>buys a name once it is already top-10</i> — after the 10×
+  has happened. The open question: can we identify winners <i>earlier</i>, as they climb, using only
+  information available at the time?</p>
+  <div class="why"><span class="h">The survivorship-free way to ask it</span>
+  Not "what did the winners have in common" — that never counts the failures, so every trait looks
+  predictive. Instead: <b>"of every stock that showed trait X, what fraction reached outcome Y?"</b>
+  measured across winners <i>and</i> losers. Example: ~200 stocks had &gt;40% gross margins in 2013;
+  if 12 reached the top-50 by 2024, that's <b>6%</b> vs a ~2% base rate — a real <b>3× lift</b>, and
+  still a 94% failure rate. Signals to test: <b>price</b> (12–1 momentum, market-cap rank velocity)
+  and <b>quality</b> (ROIC, gross-margin durability, capital intensity). The blocker is data — it needs
+  a survivorship-bias-free, point-in-time universe of the top ~500 (delisted names included);
+  yfinance can't do it. Full spec: <span class="mono">docs/RESEARCH_DESIGN.md</span>.</div>
+</section>
+
 <div class="tl">
   <span class="h">Bottom line for the committee</span>
   <p>Run it as <b>nasdaq10 · top-10 · cap-weight · full</b>, quarterly or semiannual, as a
@@ -419,7 +501,8 @@ tr.hot td.lbl,tr.hot td:first-child{{box-shadow:inset 3px 0 0 var(--green)}}
   That is the configuration that survives all three checks: it's the <b>least overfit</b> (top-10
   structure held up out-of-sample), the <b>most tax-robust</b> (8%/yr turnover, 0.6 pt drag), and it
   sits on the efficient frontier. You are buying a real, well-documented mega-cap-tech factor — not a
-  market-beating secret — so size for a <b>−50% drawdown</b> and don't extrapolate the 17.7% CAGR forward.</p>
+  market-beating secret — so size for a <b>−50% drawdown</b> and expect <b>index + a modest premium</b>
+  forward, not a repeat of the {strat_cagr} CAGR.</p>
 </div>
 
 <div class="foot">
