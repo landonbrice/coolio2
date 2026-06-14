@@ -1,0 +1,345 @@
+{
+  "as_of": "2026-06-14T15:44:12Z",
+  "price_as_of": "2026-06-14",
+  "data_source": "live",
+  "meta": {
+    "universe": "nasdaq10",
+    "weighting": "capweight",
+    "top_n": 10,
+    "deploy_cash": 3000.0,
+    "drift_band": 0.05,
+    "cadence": "Q",
+    "holdings_present": false,
+    "holdings_path": "holdings.json"
+  },
+  "top10": [
+    {
+      "ticker": "NVDA",
+      "name": "Nvidia",
+      "market_cap": 4969907049133.301,
+      "rank": 1,
+      "target_weight": 0.1984797925855601
+    },
+    {
+      "ticker": "GOOGL",
+      "name": "Alphabet (Google)",
+      "market_cap": 4386274211690.2666,
+      "rank": 2,
+      "target_weight": 0.175171645496166
+    },
+    {
+      "ticker": "AAPL",
+      "name": "Apple",
+      "market_cap": 4275930023995.6055,
+      "rank": 3,
+      "target_weight": 0.17076490483278123
+    },
+    {
+      "ticker": "MSFT",
+      "name": "Microsoft",
+      "market_cap": 2902586503697.6523,
+      "rank": 4,
+      "target_weight": 0.1159186201110185
+    },
+    {
+      "ticker": "AMZN",
+      "name": "Amazon",
+      "market_cap": 2566108488785.8926,
+      "rank": 5,
+      "target_weight": 0.10248092682036963
+    },
+    {
+      "ticker": "AVGO",
+      "name": "Broadcom",
+      "market_cap": 1817728701095.418,
+      "rank": 6,
+      "target_weight": 0.07259339299578142
+    },
+    {
+      "ticker": "TSLA",
+      "name": "Tesla",
+      "market_cap": 1526438825382.7869,
+      "rank": 7,
+      "target_weight": 0.060960347640577256
+    },
+    {
+      "ticker": "META",
+      "name": "Meta (Facebook)",
+      "market_cap": 1439235195323.3398,
+      "rank": 8,
+      "target_weight": 0.057477755665356046
+    },
+    {
+      "ticker": "INTC",
+      "name": "Intel",
+      "market_cap": 626088818466.1865,
+      "rank": 9,
+      "target_weight": 0.02500368268476525
+    },
+    {
+      "ticker": "ORCL",
+      "name": "Oracle",
+      "market_cap": 529566364023.19336,
+      "rank": 10,
+      "target_weight": 0.021148931167624632
+    }
+  ],
+  "deployment_plan": [
+    {
+      "ticker": "NVDA",
+      "name": "Nvidia",
+      "target_weight": 0.1984797925855601,
+      "dollars": 595.44,
+      "shares": 2.9019,
+      "price": 205.19,
+      "action": "BUY"
+    },
+    {
+      "ticker": "GOOGL",
+      "name": "Alphabet (Google)",
+      "target_weight": 0.175171645496166,
+      "dollars": 525.51,
+      "shares": 1.4611,
+      "price": 359.68,
+      "action": "BUY"
+    },
+    {
+      "ticker": "AAPL",
+      "name": "Apple",
+      "target_weight": 0.17076490483278123,
+      "dollars": 512.29,
+      "shares": 1.7597,
+      "price": 291.13,
+      "action": "BUY"
+    },
+    {
+      "ticker": "MSFT",
+      "name": "Microsoft",
+      "target_weight": 0.1159186201110185,
+      "dollars": 347.76,
+      "shares": 0.89,
+      "price": 390.74,
+      "action": "BUY"
+    },
+    {
+      "ticker": "AMZN",
+      "name": "Amazon",
+      "target_weight": 0.10248092682036963,
+      "dollars": 307.44,
+      "shares": 1.2888,
+      "price": 238.55,
+      "action": "BUY"
+    },
+    {
+      "ticker": "AVGO",
+      "name": "Broadcom",
+      "target_weight": 0.07259339299578142,
+      "dollars": 217.78,
+      "shares": 0.57,
+      "price": 382.07,
+      "action": "BUY"
+    },
+    {
+      "ticker": "TSLA",
+      "name": "Tesla",
+      "target_weight": 0.060960347640577256,
+      "dollars": 182.88,
+      "shares": 0.45,
+      "price": 406.43,
+      "action": "BUY"
+    },
+    {
+      "ticker": "META",
+      "name": "Meta (Facebook)",
+      "target_weight": 0.057477755665356046,
+      "dollars": 172.43,
+      "shares": 0.3041,
+      "price": 566.98,
+      "action": "BUY"
+    },
+    {
+      "ticker": "INTC",
+      "name": "Intel",
+      "target_weight": 0.02500368268476525,
+      "dollars": 75.01,
+      "shares": 0.6022,
+      "price": 124.57,
+      "action": "BUY"
+    },
+    {
+      "ticker": "ORCL",
+      "name": "Oracle",
+      "target_weight": 0.021148931167624632,
+      "dollars": 63.45,
+      "shares": 0.3446,
+      "price": 184.13,
+      "action": "BUY"
+    }
+  ],
+  "portfolio": {
+    "total_value": 3000.0,
+    "cash": 3000.0,
+    "positions_value": 0.0,
+    "num_positions": 0,
+    "positions": {},
+    "holdings_present": false
+  },
+  "vs_holdings": [
+    {
+      "ticker": "NVDA",
+      "name": "Nvidia",
+      "current_shares": 0.0,
+      "price": 205.19,
+      "current_value": 0.0,
+      "current_weight": 0.0,
+      "target_weight": 0.1985,
+      "drift": -0.1985,
+      "action": "BUY",
+      "dollar_delta": 595.44,
+      "new_entrant": true,
+      "dropped_out": false
+    },
+    {
+      "ticker": "GOOGL",
+      "name": "Alphabet (Google)",
+      "current_shares": 0.0,
+      "price": 359.68,
+      "current_value": 0.0,
+      "current_weight": 0.0,
+      "target_weight": 0.1752,
+      "drift": -0.1752,
+      "action": "BUY",
+      "dollar_delta": 525.51,
+      "new_entrant": true,
+      "dropped_out": false
+    },
+    {
+      "ticker": "AAPL",
+      "name": "Apple",
+      "current_shares": 0.0,
+      "price": 291.13,
+      "current_value": 0.0,
+      "current_weight": 0.0,
+      "target_weight": 0.1708,
+      "drift": -0.1708,
+      "action": "BUY",
+      "dollar_delta": 512.29,
+      "new_entrant": true,
+      "dropped_out": false
+    },
+    {
+      "ticker": "MSFT",
+      "name": "Microsoft",
+      "current_shares": 0.0,
+      "price": 390.74,
+      "current_value": 0.0,
+      "current_weight": 0.0,
+      "target_weight": 0.1159,
+      "drift": -0.1159,
+      "action": "BUY",
+      "dollar_delta": 347.76,
+      "new_entrant": true,
+      "dropped_out": false
+    },
+    {
+      "ticker": "AMZN",
+      "name": "Amazon",
+      "current_shares": 0.0,
+      "price": 238.55,
+      "current_value": 0.0,
+      "current_weight": 0.0,
+      "target_weight": 0.1025,
+      "drift": -0.1025,
+      "action": "BUY",
+      "dollar_delta": 307.44,
+      "new_entrant": true,
+      "dropped_out": false
+    },
+    {
+      "ticker": "AVGO",
+      "name": "Broadcom",
+      "current_shares": 0.0,
+      "price": 382.07,
+      "current_value": 0.0,
+      "current_weight": 0.0,
+      "target_weight": 0.0726,
+      "drift": -0.0726,
+      "action": "BUY",
+      "dollar_delta": 217.78,
+      "new_entrant": true,
+      "dropped_out": false
+    },
+    {
+      "ticker": "TSLA",
+      "name": "Tesla",
+      "current_shares": 0.0,
+      "price": 406.43,
+      "current_value": 0.0,
+      "current_weight": 0.0,
+      "target_weight": 0.061,
+      "drift": -0.061,
+      "action": "BUY",
+      "dollar_delta": 182.88,
+      "new_entrant": true,
+      "dropped_out": false
+    },
+    {
+      "ticker": "META",
+      "name": "Meta (Facebook)",
+      "current_shares": 0.0,
+      "price": 566.98,
+      "current_value": 0.0,
+      "current_weight": 0.0,
+      "target_weight": 0.0575,
+      "drift": -0.0575,
+      "action": "BUY",
+      "dollar_delta": 172.43,
+      "new_entrant": true,
+      "dropped_out": false
+    },
+    {
+      "ticker": "INTC",
+      "name": "Intel",
+      "current_shares": 0.0,
+      "price": 124.57,
+      "current_value": 0.0,
+      "current_weight": 0.0,
+      "target_weight": 0.025,
+      "drift": -0.025,
+      "action": "HOLD",
+      "dollar_delta": 75.01,
+      "new_entrant": true,
+      "dropped_out": false
+    },
+    {
+      "ticker": "ORCL",
+      "name": "Oracle",
+      "current_shares": 0.0,
+      "price": 184.13,
+      "current_value": 0.0,
+      "current_weight": 0.0,
+      "target_weight": 0.0211,
+      "drift": -0.0211,
+      "action": "HOLD",
+      "dollar_delta": 63.45,
+      "new_entrant": true,
+      "dropped_out": false
+    }
+  ],
+  "drift_alert": true,
+  "next_rebalance_date": "2026-07-01",
+  "days_to_rebalance": 17,
+  "benchmark": {
+    "available": true,
+    "symbol": "^SP500TR",
+    "label": "S&P 500 (Total Return)",
+    "level": 16613.3,
+    "trailing_1y_return": 0.2444,
+    "as_of": "2026-06-12"
+  },
+  "notes": [
+    "Live market caps via Yahoo fast_info (current price x shares outstanding); target weights cap-weighted over today's top-10.",
+    "No holdings.json found -- treating portfolio as all-cash $3,000 starting position for the vs-holdings view.",
+    "Research / not financial advice. The bot recommends; a human trades."
+  ]
+}
