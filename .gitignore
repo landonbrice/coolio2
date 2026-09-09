@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Backtest artifacts / cache
+output/
+data_cache/
+*.parquet
+*.png
+
+# Local config
+holdings.json
+
+# Run logs
+*.log

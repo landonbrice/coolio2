@@ -1,0 +1,101 @@
+{
+  "meta": {
+    "generated": "2026-06-14T22:39:34.788623Z",
+    "window": {
+      "start": "2006-01-01",
+      "end": "2026-06-14"
+    },
+    "strategy_config": {
+      "universe": "nasdaq10",
+      "weighting": "capweight",
+      "top_n": 10,
+      "mode": "full",
+      "interval": "Q",
+      "cost_bps": 5.0
+    },
+    "n_months": 245,
+    "month_range": [
+      "2006-02-28",
+      "2026-06-30"
+    ],
+    "hypothesis": "Top-10 edge over QQQ is a leveraged dose of the same factor (alpha~0, QQQ beta>1, +momentum), NOT skill/alpha."
+  },
+  "single_factor": {
+    "model": "strat_excess ~ alpha + beta * QQQ_excess",
+    "rf_source": "Ken French RF",
+    "alpha_monthly": 0.0010416332174412058,
+    "alpha_annual_pct": 1.2571457814925635,
+    "alpha_se_ols_monthly": 0.0011092961145088155,
+    "alpha_se_hac_monthly": 0.0013030944105365172,
+    "alpha_t_ols": 0.9390037554602181,
+    "alpha_t_hac": 0.799353607090018,
+    "beta_qqq": 1.0456442753471646,
+    "beta_qqq_se_hac": 0.029554577420396827,
+    "beta_qqq_t_hac": 35.38011254478376,
+    "r2": 0.9166586151898679,
+    "r2_adj": 0.9163156465280978,
+    "n_months": 245,
+    "hac_lags": 6
+  },
+  "multi_factor": {
+    "model_ff4": "strat_excess ~ alpha + Mkt-RF + SMB + HML + Mom",
+    "n_months": 243,
+    "month_range": [
+      "2006-02",
+      "2026-04"
+    ],
+    "hac_lags": 6,
+    "ff4": {
+      "alpha_monthly": 0.0039046270496291835,
+      "alpha_annual_pct": 4.78749804798253,
+      "alpha_t_hac": 2.3321990058571,
+      "loadings": {
+        "alpha": 0.0039046270496291835,
+        "Mkt-RF": 1.1643252816207748,
+        "SMB": -0.21724903259977424,
+        "HML": -0.555537058541009,
+        "Mom": -0.017327516307120143
+      },
+      "t_hac": {
+        "alpha": 2.3321990058571,
+        "Mkt-RF": 26.382405344696746,
+        "SMB": -2.925599043227592,
+        "HML": -7.332939701846043,
+        "Mom": -0.3189897105894525
+      },
+      "r2": 0.8089377187917891,
+      "r2_adj": 0.8057265880151805
+    },
+    "ff4_plus_qqq_orth": {
+      "alpha_monthly": 0.003904627049629416,
+      "alpha_annual_pct": 4.787498047982819,
+      "alpha_t_hac": 3.568239992885184,
+      "loadings": {
+        "alpha": 0.003904627049629416,
+        "Mkt-RF": 1.1643252816207754,
+        "SMB": -0.21724903259977396,
+        "HML": -0.5555370585410087,
+        "Mom": -0.01732751630712087,
+        "QQQ_orth": 1.2844314572513922
+      },
+      "t_hac": {
+        "alpha": 3.568239992885184,
+        "Mkt-RF": 38.32803239934167,
+        "SMB": -5.224665908916209,
+        "HML": -10.725741058161045,
+        "Mom": -0.4433788523275056,
+        "QQQ_orth": 17.229494778546773
+      },
+      "r2": 0.9368303218791166,
+      "r2_adj": 0.9354976282478744
+    }
+  },
+  "ff_done": true,
+  "verdict": {
+    "verdict": "mostly beta",
+    "hypothesis_confirmed": true,
+    "alpha_significant_hac": false,
+    "beta_gt_1": true,
+    "ff4_alpha_significant": true
+  }
+}

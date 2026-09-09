@@ -1,0 +1,48 @@
+[prices] loading cached price panel (53 tickers requested)
+[prices] loading cached price panel (1 tickers requested)
+Matplotlib is building the font cache; this may take a moment.
+Window: 2006-01-01 -> 2026-06-13 | weighting=capweight | cost=5.0bps | universes=['nasdaq10', 'us10', 'global10']
+
+Priced 49/53 tickers over 5606 trading days.
+
+  note [nasdaq10]: dropped un-priceable names at some rebalances: DELLx8
+  note [global10]: dropped un-priceable names at some rebalances: CHLx20, OGZPYx4, PTRx36, SNPx4
+
+=== Results (2006-01-03 -> 2026-06-12, ~20.4y, dividends reinvested) ===
+
+| Strategy                | Final $1 ->   | Total Return   | CAGR   | Vol   |   Sharpe | Max DD   | x vs S&P   |
+|-------------------------|---------------|----------------|--------|-------|----------|----------|------------|
+| Top 10 NASDAQ-listed    | $27.73        | 2,673.1%       | 17.7%  | 23.9% |     0.74 | -51.3%   | 3.20x      |
+| Top 10 U.S. companies   | $11.45        | 1,045.0%       | 12.7%  | 21.3% |     0.60 | -51.4%   | 1.32x      |
+| Top 10 global companies | $9.96         | 895.5%         | 11.9%  | 20.4% |     0.58 | -51.3%   | 1.15x      |
+| S&P 500 (Total Return)  | $8.66         | 765.7%         | 11.1%  | 19.4% |     0.57 | -55.3%   | 1.00x      |
+
+=== Per-calendar-year returns (%) ===
+
+      Top 10 NASDAQ-listed  Top 10 U.S. companies  Top 10 global companies  S&P 500 (Total Return)
+year                                                                                              
+2006                   8.3                   12.6                     15.9                    13.9
+2007                  13.1                    0.3                      2.6                     5.6
+2008                 -36.6                  -27.5                    -32.7                   -36.1
+2009                  47.2                    3.8                     10.7                    22.6
+2010                   9.1                    8.1                      8.7                    13.2
+2011                   5.1                   11.0                      2.2                     1.0
+2012                  18.3                   11.0                     11.8                    14.2
+2013                  25.4                   22.0                     21.1                    29.1
+2014                  20.4                   14.1                     13.0                    14.7
+2015                  16.2                    3.7                      1.2                     1.4
+2016                  10.3                   13.6                     14.0                    13.7
+2017                  38.5                   27.9                     38.6                    20.8
+2018                   0.9                   -1.5                     -4.0                    -5.2
+2019                  44.6                   40.1                     41.8                    31.3
+2020                  45.0                   39.2                     32.9                    17.4
+2021                  38.4                   33.8                     24.3                    30.6
+2022                 -39.5                  -36.7                    -35.4                   -18.6
+2023                  76.2                   43.1                     39.9                    26.8
+2024                  52.0                   47.7                     42.9                    25.7
+2025                  24.3                   25.1                     23.7                    18.1
+2026                   2.3                    2.2                      4.8                     8.9
+Wrote output/rolling_cagr.png
+
+Wrote output/results_summary.md
+Wrote output/equity_curves.png

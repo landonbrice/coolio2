@@ -1,0 +1,164 @@
+{
+  "meta": {
+    "universe": "nasdaq10",
+    "interval": "Q",
+    "dividends_reinvested": true,
+    "baseline": "QQQ (Nasdaq-100 ETF, adjusted close = total-return proxy)",
+    "window": {
+      "start": "2006-01-03",
+      "end": "2026-06-12",
+      "years": 20.44
+    },
+    "tuned_baseline_ref": "nasdaq10 top_n=10 capweight cost_bps=5 mode=full interval=Q (from ablate.py / run_backtest.py)",
+    "note": "All metrics aligned to the common window and rebased to 1.0, QQQ included."
+  },
+  "rungs": [
+    {
+      "rung": 0,
+      "layer": "BASELINE",
+      "name": "QQQ (Nasdaq-100 ETF, baseline)",
+      "cagr": 0.159061,
+      "vol": 0.219291,
+      "max_dd": -0.53404,
+      "sharpe": 0.7253,
+      "multiple": 20.4273,
+      "x_vs_qqq": 1.0,
+      "marginal_vs_prev_pts": null
+    },
+    {
+      "rung": 1,
+      "layer": "BASELINE/trivial",
+      "name": "Top-1 cap-weight (own the single biggest NASDAQ name)",
+      "cagr": 0.179058,
+      "vol": 0.292693,
+      "max_dd": -0.579419,
+      "sharpe": 0.6118,
+      "multiple": 28.9759,
+      "x_vs_qqq": 1.4185,
+      "marginal_vs_prev_pts": 2.0
+    },
+    {
+      "rung": 2,
+      "layer": "CONCENTRATION",
+      "name": "Top-3 cap-weight",
+      "cagr": 0.178226,
+      "vol": 0.249941,
+      "max_dd": -0.589417,
+      "sharpe": 0.7131,
+      "multiple": 28.5611,
+      "x_vs_qqq": 1.3982,
+      "marginal_vs_prev_pts": -0.083
+    },
+    {
+      "rung": 3,
+      "layer": "CONCENTRATION",
+      "name": "Top-5 cap-weight",
+      "cagr": 0.17981,
+      "vol": 0.246967,
+      "max_dd": -0.584862,
+      "sharpe": 0.7281,
+      "multiple": 29.356,
+      "x_vs_qqq": 1.4371,
+      "marginal_vs_prev_pts": 0.158
+    },
+    {
+      "rung": 4,
+      "layer": "CONCENTRATION",
+      "name": "Top-10 cap-weight",
+      "cagr": 0.176594,
+      "vol": 0.238863,
+      "max_dd": -0.513074,
+      "sharpe": 0.7393,
+      "multiple": 27.7633,
+      "x_vs_qqq": 1.3591,
+      "marginal_vs_prev_pts": -0.322
+    },
+    {
+      "rung": 5,
+      "layer": "WEIGHTING",
+      "name": "Top-10 equal-weight",
+      "cagr": 0.178857,
+      "vol": 0.231797,
+      "max_dd": -0.42428,
+      "sharpe": 0.7716,
+      "multiple": 28.8754,
+      "x_vs_qqq": 1.4136,
+      "marginal_vs_prev_pts": 0.226
+    },
+    {
+      "rung": 6,
+      "layer": "REBALANCING RULE",
+      "name": "Top-10 cap-weight, mode=full (best rule)",
+      "cagr": 0.176594,
+      "vol": 0.238863,
+      "max_dd": -0.513074,
+      "sharpe": 0.7393,
+      "multiple": 27.7633,
+      "x_vs_qqq": 1.3591,
+      "marginal_vs_prev_pts": -0.226
+    },
+    {
+      "rung": 7,
+      "layer": "FRICTION/cost",
+      "name": "Top-10 cap-weight + 5 bps cost",
+      "cagr": 0.176527,
+      "vol": 0.238863,
+      "max_dd": -0.513157,
+      "sharpe": 0.739,
+      "multiple": 27.7308,
+      "x_vs_qqq": 1.3575,
+      "marginal_vs_prev_pts": -0.007
+    },
+    {
+      "rung": 8,
+      "layer": "FRICTION/tax",
+      "name": "Top-10 cap-weight + 5 bps cost + 20/37 tax",
+      "cagr": 0.170745,
+      "vol": 0.23896,
+      "max_dd": -0.515771,
+      "sharpe": 0.7145,
+      "multiple": 25.0749,
+      "x_vs_qqq": 1.2275,
+      "marginal_vs_prev_pts": -0.578
+    }
+  ],
+  "rebalancing_rule_detail": [
+    {
+      "rule": "full (trade all back to target)",
+      "cagr": 0.176594,
+      "vol": 0.238863,
+      "max_dd": -0.513074,
+      "sharpe": 0.7393,
+      "x_vs_qqq": 1.3591,
+      "delta_cagr_vs_full_pts": 0.0
+    },
+    {
+      "rule": "drift_band 5% (trade only on >5pt drift)",
+      "cagr": 0.167633,
+      "vol": 0.232481,
+      "max_dd": -0.507403,
+      "sharpe": 0.7211,
+      "x_vs_qqq": 1.1625,
+      "delta_cagr_vs_full_pts": -0.896
+    },
+    {
+      "rule": "no_sell (never trim a winner; only exit drop-outs)",
+      "cagr": 0.159656,
+      "vol": 0.233476,
+      "max_dd": -0.513032,
+      "sharpe": 0.6838,
+      "x_vs_qqq": 1.0105,
+      "delta_cagr_vs_full_pts": -1.694
+    }
+  ],
+  "layer_contribution_pts": {
+    "CONCENTRATION (QQQ -> top-N cap NASDAQ basket)": 1.753,
+    "WEIGHTING (cap -> equal at top10)": 0.226,
+    "REBALANCING RULE (best rule - full)": 0.0,
+    "FRICTION/cost (5bps)": -0.007,
+    "FRICTION/tax (20/37)": -0.578
+  },
+  "carrier_layer": "CONCENTRATION (QQQ -> top-N cap NASDAQ basket)",
+  "ladder_summary": "Ablation ladder (nasdaq10, quarterly, dividends reinvested), window 2006-01-03 -> 2026-06-12 (~20.4y), all measured vs QQQ. Top-1 single biggest name is the trivial start; each concentration step (top-1 -> top-3 -> top-5 -> top-10) is the big mover. Equal-weight vs cap-weight (WEIGHTING) and full vs drift_band vs no_sell (the REBALANCING RULE) move the needle far less; cost (5bps) and tax (20/37) only subtract. Clean top-10 cap-weight = 1.36x QQQ before frictions.",
+  "carrier_hypothesis": "CONCENTRATION is the carrier layer: simply stepping off QQQ into a cap-weighted NASDAQ mega-cap basket is the whole edge -- the trivial top-1 name already jumps to 1.42x QQQ (+2.0 CAGR pts) and the clean top-10 holds 1.36x; everything above (weighting, friction) is second-order. The rebalancing RULE -- the thing in the title -- is among the SMALLEST levers: full/drift/no_sell span only 1.69 CAGR pts and every alternative to 'full' is dominated. The edge over QQQ is OWNING the concentrated basket, not how you rebalance it."
+}

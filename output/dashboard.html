@@ -1,0 +1,377 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Top-10 Rebalancer — Live Dashboard</title>
+<style>
+:root{
+  --ink:#1a2332; --muted:#5b6776; --line:#e4e8ee; --bg:#fbfcfd; --card:#fff;
+  --green:#2e7d57; --blue:#1f77b4; --red:#c0392b; --gold:#b07d2b; --accent:#2e7d57;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+.wrap{max-width:980px;margin:0 auto;padding:0 28px 80px}
+header{padding:54px 0 22px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.kicker{letter-spacing:.16em;text-transform:uppercase;font-size:11.5px;color:var(--accent);font-weight:700}
+h1{font-size:32px;line-height:1.18;margin:10px 0 6px;letter-spacing:-.01em}
+.sub{color:var(--muted)}
+.meta{margin-top:16px;font-size:12.5px;color:var(--muted);display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+.meta b{color:var(--ink)}
+.pill{display:inline-block;border-radius:999px;padding:3px 11px;font-size:11px;font-weight:800;letter-spacing:.03em}
+.pill.live{background:#eaf7ef;color:var(--green);border:1px solid #bfe3cd}
+.pill.cached{background:#eef1f5;color:var(--muted);border:1px solid var(--line)}
+.badge{display:inline-block;background:#fff4f4;color:var(--red);border:1px solid #f3d3d3;
+  border-radius:5px;padding:3px 10px;font-size:11px;font-weight:700;letter-spacing:.03em}
+.banner{margin:16px 0 2px;border-radius:8px;padding:11px 16px;font-size:13.5px;font-weight:600}
+.banner.alert{background:#fdf4e3;color:#8a5d12;border:1px solid #f0dcae}
+.banner.ok{background:#eaf7ef;color:#1f6e46;border:1px solid #bfe3cd}
+section{margin:44px 0 0;scroll-margin-top:18px}
+.snum{color:var(--accent);font-weight:800;font-size:13px;letter-spacing:.05em}
+h2{font-size:22px;margin:6px 0 4px;letter-spacing:-.01em}
+.lede{color:var(--muted);margin:0 0 16px;max-width:74ch}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:6px 0 4px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--muted);font-weight:700;padding:6px 9px;border-bottom:2px solid var(--line)}
+td{padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:middle}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.num.inline{margin-left:8px}
+.lbl{font-weight:600}
+.tkr{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:800;font-size:13px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+.bold{font-weight:800} .neg{color:var(--red)} .pos{color:var(--green)}
+.muted{color:var(--muted);font-weight:500}
+.drift-hot{color:var(--red);font-weight:800}
+.empty{text-align:center;color:var(--muted);padding:18px 9px}
+.foot-row td{border-top:2px solid var(--line);background:#f7faf8}
+.barwrap{display:inline-block;width:96px;height:9px;background:#eef1f5;border-radius:5px;vertical-align:middle;overflow:hidden}
+.bar{display:block;height:100%;border-radius:5px}
+.chip{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:5px;font-weight:800;letter-spacing:.02em}
+.chip.buy{background:#eaf7ef;color:var(--green)}
+.chip.sell{background:#fdeaea;color:var(--red)}
+.chip.hold{background:#eef1f5;color:var(--muted)}
+.tag{font-size:10px;font-weight:700;letter-spacing:.02em}
+.tag.new{color:var(--green)} .tag.dropped{color:var(--red)}
+.cards{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0 6px}
+.card{flex:1;min-width:220px;background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:16px 16px 14px;box-shadow:0 1px 2px rgba(20,30,50,.04)}
+.ct{font-size:12.5px;color:var(--muted);font-weight:700;min-height:18px}
+.cbig{font-size:28px;font-weight:800;letter-spacing:-.02em;margin:6px 0 10px}
+.cunit{font-size:13px;font-weight:600;color:var(--muted)}
+.crow{display:flex;justify-content:space-between;font-size:12.5px;padding:2px 0;color:var(--muted)}
+.crow b{color:var(--ink)}
+.cnote{margin-top:9px;font-size:11.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:7px}
+.strip{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0 8px}
+.stat{flex:1;min-width:150px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.stat .sl{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.stat .sv{font-size:25px;font-weight:800;margin-top:4px;letter-spacing:-.01em}
+.stat .sc{font-size:11.5px;color:var(--muted);margin-top:3px}
+.note{background:#f4f7fb;border-left:3px solid var(--accent);border-radius:0 8px 8px 0;
+  padding:11px 15px;margin:12px 0 2px;font-size:13px;color:var(--muted)}
+.caption{font-size:12px;color:var(--muted);margin:8px 0 2px}
+.notes{background:#fbf6ee;border-left:3px solid var(--gold);border-radius:0 8px 8px 0;
+  padding:12px 16px;margin:26px 0 2px;font-size:12.5px;color:var(--muted)}
+.notes .nh{font-weight:800;color:var(--gold);font-size:11px;text-transform:uppercase;
+  letter-spacing:.06em;display:block;margin-bottom:6px}
+.notes ul{margin:0;padding-left:18px} .notes li{margin:3px 0}
+.foot{margin-top:50px;padding-top:20px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted)}
+</style></head><body><div class="wrap">
+
+<header>
+  <div class="kicker">Research · Not Financial Advice</div>
+  <h1>Top-10 Rebalancer — Live Dashboard</h1>
+  <div class="sub">Today's mega-cap leaders, the target cap-weighted portfolio, and a
+  recommend-not-execute rebalancing plan vs your holdings. The bot recommends; a human trades.</div>
+  <div class="meta">
+    <span><b>As of</b> 2026-06-14T15:44:12Z</span>
+    <span><b>Prices</b> 2026-06-14</span>
+    <span><span class="pill live">● LIVE</span></span>
+    <span><b>Universe</b> nasdaq10 · capweight · top-10</span>
+  </div>
+  <div style="margin-top:14px"><span class="badge">RESEARCH / NOT FINANCIAL ADVICE — THE BOT RECOMMENDS, A HUMAN TRADES</span></div>
+  <div class="banner alert">⚠ Portfolio has drifted beyond the 5% band — rebalance suggested.</div>
+</header>
+
+<section>
+  <div class="snum">01 · TODAY'S RANKED TOP-10</div>
+  <h2>The current mega-cap leaders</h2>
+  <p class="lede">Ranked by market capitalization; target weights are cap-weighted over the
+  point-in-time nasdaq10 roster and sum to 100%.</p>
+  <table>
+    <tr><th class="num">Rank</th><th>Ticker</th><th>Name</th><th class="num">Market cap</th><th>Target weight</th></tr>
+    <tr>
+          <td class="num">1</td>
+          <td class="tkr">NVDA</td>
+          <td class="lbl">Nvidia</td>
+          <td class="num">$4,969.9B</td>
+          <td><span class="barwrap"><span class="bar" style="width:100%;background:var(--green)"></span></span><span class="num inline">19.85%</span></td>
+        </tr><tr>
+          <td class="num">2</td>
+          <td class="tkr">GOOGL</td>
+          <td class="lbl">Alphabet (Google)</td>
+          <td class="num">$4,386.3B</td>
+          <td><span class="barwrap"><span class="bar" style="width:88%;background:var(--green)"></span></span><span class="num inline">17.52%</span></td>
+        </tr><tr>
+          <td class="num">3</td>
+          <td class="tkr">AAPL</td>
+          <td class="lbl">Apple</td>
+          <td class="num">$4,275.9B</td>
+          <td><span class="barwrap"><span class="bar" style="width:86%;background:var(--green)"></span></span><span class="num inline">17.08%</span></td>
+        </tr><tr>
+          <td class="num">4</td>
+          <td class="tkr">MSFT</td>
+          <td class="lbl">Microsoft</td>
+          <td class="num">$2,902.6B</td>
+          <td><span class="barwrap"><span class="bar" style="width:58%;background:var(--green)"></span></span><span class="num inline">11.59%</span></td>
+        </tr><tr>
+          <td class="num">5</td>
+          <td class="tkr">AMZN</td>
+          <td class="lbl">Amazon</td>
+          <td class="num">$2,566.1B</td>
+          <td><span class="barwrap"><span class="bar" style="width:52%;background:var(--green)"></span></span><span class="num inline">10.25%</span></td>
+        </tr><tr>
+          <td class="num">6</td>
+          <td class="tkr">AVGO</td>
+          <td class="lbl">Broadcom</td>
+          <td class="num">$1,817.7B</td>
+          <td><span class="barwrap"><span class="bar" style="width:37%;background:var(--green)"></span></span><span class="num inline">7.26%</span></td>
+        </tr><tr>
+          <td class="num">7</td>
+          <td class="tkr">TSLA</td>
+          <td class="lbl">Tesla</td>
+          <td class="num">$1,526.4B</td>
+          <td><span class="barwrap"><span class="bar" style="width:31%;background:var(--green)"></span></span><span class="num inline">6.10%</span></td>
+        </tr><tr>
+          <td class="num">8</td>
+          <td class="tkr">META</td>
+          <td class="lbl">Meta (Facebook)</td>
+          <td class="num">$1,439.2B</td>
+          <td><span class="barwrap"><span class="bar" style="width:29%;background:var(--green)"></span></span><span class="num inline">5.75%</span></td>
+        </tr><tr>
+          <td class="num">9</td>
+          <td class="tkr">INTC</td>
+          <td class="lbl">Intel</td>
+          <td class="num">$626.1B</td>
+          <td><span class="barwrap"><span class="bar" style="width:13%;background:var(--green)"></span></span><span class="num inline">2.50%</span></td>
+        </tr><tr>
+          <td class="num">10</td>
+          <td class="tkr">ORCL</td>
+          <td class="lbl">Oracle</td>
+          <td class="num">$529.6B</td>
+          <td><span class="barwrap"><span class="bar" style="width:11%;background:var(--green)"></span></span><span class="num inline">2.11%</span></td>
+        </tr>
+  </table>
+</section>
+
+<section>
+  <div class="snum">02 · DEPLOYMENT PLAN</div>
+  <h2>Deploy $3,000 of fresh cash</h2>
+  <p class="lede">Assumes you start in cash — every line is a buy. Dollars and shares per name at the
+  prices shown.</p>
+  <table>
+    <tr><th>Ticker</th><th>Name</th><th class="num">Target wt</th><th class="num">$ to invest</th>
+        <th class="num">Shares (@ price)</th><th class="num">Action</th></tr>
+    <tr>
+          <td class="tkr">NVDA</td>
+          <td class="lbl">Nvidia</td>
+          <td class="num">19.85%</td>
+          <td class="num bold">$595.44</td>
+          <td class="num">2.9019 <span class="muted">@ $205.19</span></td>
+          <td class="num"><span class="chip buy">BUY</span></td>
+        </tr><tr>
+          <td class="tkr">GOOGL</td>
+          <td class="lbl">Alphabet (Google)</td>
+          <td class="num">17.52%</td>
+          <td class="num bold">$525.51</td>
+          <td class="num">1.4611 <span class="muted">@ $359.68</span></td>
+          <td class="num"><span class="chip buy">BUY</span></td>
+        </tr><tr>
+          <td class="tkr">AAPL</td>
+          <td class="lbl">Apple</td>
+          <td class="num">17.08%</td>
+          <td class="num bold">$512.29</td>
+          <td class="num">1.7597 <span class="muted">@ $291.13</span></td>
+          <td class="num"><span class="chip buy">BUY</span></td>
+        </tr><tr>
+          <td class="tkr">MSFT</td>
+          <td class="lbl">Microsoft</td>
+          <td class="num">11.59%</td>
+          <td class="num bold">$347.76</td>
+          <td class="num">0.8900 <span class="muted">@ $390.74</span></td>
+          <td class="num"><span class="chip buy">BUY</span></td>
+        </tr><tr>
+          <td class="tkr">AMZN</td>
+          <td class="lbl">Amazon</td>
+          <td class="num">10.25%</td>
+          <td class="num bold">$307.44</td>
+          <td class="num">1.2888 <span class="muted">@ $238.55</span></td>
+          <td class="num"><span class="chip buy">BUY</span></td>
+        </tr><tr>
+          <td class="tkr">AVGO</td>
+          <td class="lbl">Broadcom</td>
+          <td class="num">7.26%</td>
+          <td class="num bold">$217.78</td>
+          <td class="num">0.5700 <span class="muted">@ $382.07</span></td>
+          <td class="num"><span class="chip buy">BUY</span></td>
+        </tr><tr>
+          <td class="tkr">TSLA</td>
+          <td class="lbl">Tesla</td>
+          <td class="num">6.10%</td>
+          <td class="num bold">$182.88</td>
+          <td class="num">0.4500 <span class="muted">@ $406.43</span></td>
+          <td class="num"><span class="chip buy">BUY</span></td>
+        </tr><tr>
+          <td class="tkr">META</td>
+          <td class="lbl">Meta (Facebook)</td>
+          <td class="num">5.75%</td>
+          <td class="num bold">$172.43</td>
+          <td class="num">0.3041 <span class="muted">@ $566.98</span></td>
+          <td class="num"><span class="chip buy">BUY</span></td>
+        </tr><tr>
+          <td class="tkr">INTC</td>
+          <td class="lbl">Intel</td>
+          <td class="num">2.50%</td>
+          <td class="num bold">$75.01</td>
+          <td class="num">0.6022 <span class="muted">@ $124.57</span></td>
+          <td class="num"><span class="chip buy">BUY</span></td>
+        </tr><tr>
+          <td class="tkr">ORCL</td>
+          <td class="lbl">Oracle</td>
+          <td class="num">2.11%</td>
+          <td class="num bold">$63.45</td>
+          <td class="num">0.3446 <span class="muted">@ $184.13</span></td>
+          <td class="num"><span class="chip buy">BUY</span></td>
+        </tr>
+    <tr class="foot-row">
+          <td class="lbl bold" colspan="3">Total — deploying from cash</td>
+          <td class="num bold">$2,999.99</td>
+          <td class="num muted">all BUY</td>
+          <td class="num"><span class="chip buy">BUY</span></td>
+        </tr>
+  </table>
+  <div class="caption">Assumes you start in cash; every line is a buy. Recommend-not-execute.</div>
+</section>
+
+<section>
+  <div class="snum">03 · PORTFOLIO vs TARGET</div>
+  <h2>Where you are vs where the bot wants you</h2>
+  <p class="lede">Current weights vs target, the signed drift, and the suggested action when a name is
+  beyond the 5% band. + delta = buy, − delta = sell.</p>
+  <div class="strip">
+      <div class="stat"><div class="sl">Total value</div>
+        <div class="sv">$3,000</div>
+        <div class="sc">cash + positions</div></div>
+      <div class="stat"><div class="sl">Cash</div>
+        <div class="sv">$3,000</div>
+        <div class="sc">uninvested</div></div>
+      <div class="stat"><div class="sl"># positions</div>
+        <div class="sv">0</div>
+        <div class="sc">held names</div></div>
+      <div class="stat"><div class="sl">In drift band?</div>
+        <div class="sv neg">No</div>
+        <div class="sc">within 5% of target</div></div></div>
+  <div class="note">No <span class="mono">holdings.json</span> found — showing an all-cash $3,000 starting portfolio. Every target name is a buy.</div>
+  <table>
+    <tr><th>Ticker</th><th class="num">Current wt</th><th class="num">Target wt</th>
+        <th class="num">Drift</th><th class="num">Action</th><th class="num">$ delta</th></tr>
+    <tr>
+          <td class="tkr">NVDA <span class="tag new">← NEW</span></td>
+          <td class="num">0.00%</td>
+          <td class="num">19.85%</td>
+          <td class="num drift-hot">−19.85pp</td>
+          <td class="num"><span class="chip buy">BUY</span></td>
+          <td class="num pos">+$595</td>
+        </tr><tr>
+          <td class="tkr">GOOGL <span class="tag new">← NEW</span></td>
+          <td class="num">0.00%</td>
+          <td class="num">17.52%</td>
+          <td class="num drift-hot">−17.52pp</td>
+          <td class="num"><span class="chip buy">BUY</span></td>
+          <td class="num pos">+$526</td>
+        </tr><tr>
+          <td class="tkr">AAPL <span class="tag new">← NEW</span></td>
+          <td class="num">0.00%</td>
+          <td class="num">17.08%</td>
+          <td class="num drift-hot">−17.08pp</td>
+          <td class="num"><span class="chip buy">BUY</span></td>
+          <td class="num pos">+$512</td>
+        </tr><tr>
+          <td class="tkr">MSFT <span class="tag new">← NEW</span></td>
+          <td class="num">0.00%</td>
+          <td class="num">11.59%</td>
+          <td class="num drift-hot">−11.59pp</td>
+          <td class="num"><span class="chip buy">BUY</span></td>
+          <td class="num pos">+$348</td>
+        </tr><tr>
+          <td class="tkr">AMZN <span class="tag new">← NEW</span></td>
+          <td class="num">0.00%</td>
+          <td class="num">10.25%</td>
+          <td class="num drift-hot">−10.25pp</td>
+          <td class="num"><span class="chip buy">BUY</span></td>
+          <td class="num pos">+$307</td>
+        </tr><tr>
+          <td class="tkr">AVGO <span class="tag new">← NEW</span></td>
+          <td class="num">0.00%</td>
+          <td class="num">7.26%</td>
+          <td class="num drift-hot">−7.26pp</td>
+          <td class="num"><span class="chip buy">BUY</span></td>
+          <td class="num pos">+$218</td>
+        </tr><tr>
+          <td class="tkr">TSLA <span class="tag new">← NEW</span></td>
+          <td class="num">0.00%</td>
+          <td class="num">6.10%</td>
+          <td class="num drift-hot">−6.10pp</td>
+          <td class="num"><span class="chip buy">BUY</span></td>
+          <td class="num pos">+$183</td>
+        </tr><tr>
+          <td class="tkr">META <span class="tag new">← NEW</span></td>
+          <td class="num">0.00%</td>
+          <td class="num">5.75%</td>
+          <td class="num drift-hot">−5.75pp</td>
+          <td class="num"><span class="chip buy">BUY</span></td>
+          <td class="num pos">+$172</td>
+        </tr><tr>
+          <td class="tkr">INTC <span class="tag new">← NEW</span></td>
+          <td class="num">0.00%</td>
+          <td class="num">2.50%</td>
+          <td class="num ">−2.50pp</td>
+          <td class="num"><span class="chip hold">HOLD</span></td>
+          <td class="num pos">+$75</td>
+        </tr><tr>
+          <td class="tkr">ORCL <span class="tag new">← NEW</span></td>
+          <td class="num">0.00%</td>
+          <td class="num">2.11%</td>
+          <td class="num ">−2.11pp</td>
+          <td class="num"><span class="chip hold">HOLD</span></td>
+          <td class="num pos">+$63</td>
+        </tr>
+  </table>
+</section>
+
+  <section>
+    <div class="snum">05 · BENCHMARK CONTEXT</div>
+    <h2>How the index is doing</h2>
+    <p class="lede">Frame the strategy as a mega-cap-tech <b>satellite</b> sleeve held against a broad
+    index core — not a replacement for it. The dashboard recommends; you decide the sizing.</p>
+    <div class="cards">
+      <div class="card" style="border-top:3px solid var(--blue)">
+        <div class="ct">S&amp;P 500 (Total Return) <span class="muted">(^SP500TR)</span></div>
+        <div class="cbig">16,613.30<span class="cunit"> level</span></div>
+        <div class="crow"><span>trailing 1-year return</span><b class="pos">24.4%</b></div>
+        <div class="crow"><span>as of</span><b>2026-06-12</b></div>
+        <div class="cnote">A 20–30% concentrated satellite on this core captures part of the mega-cap-tech
+        edge at closer-to-index volatility. Size for a −50% drawdown in the satellite sleeve.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="notes"><span class="nh">Notes &amp; caveats</span><ul><li>Live market caps via Yahoo fast_info (current price x shares outstanding); target weights cap-weighted over today's top-10.</li><li>No holdings.json found -- treating portfolio as all-cash $3,000 starting position for the vs-holdings view.</li><li>Research / not financial advice. The bot recommends; a human trades.</li></ul></div>
+
+<div class="foot">
+  <b>Next rebalance</b> 2026-07-01 (17 days) · cadence Q (quarterly).
+  <b>Method:</b> point-in-time membership, cap-weighted, dividends reinvested via adjusted close. Past performance ≠ future results. Recommend-not-execute: no orders are
+  placed — the bot recommends, a human trades. This is a research/curiosity tool and <b>not financial
+  advice.</b> Generated by <span class="mono">build_dashboard.py</span> from
+  <span class="mono">dashboard_state.json</span> · as of 2026-06-14T15:44:12Z.
+</div>
+
+</div></body></html>
